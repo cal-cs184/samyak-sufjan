@@ -96,42 +96,26 @@
 
   <h2>Overview</h2>
   <p>
-    This project is a physically-based path tracer designed to render photorealistic images by simulating the complex interactions of light with surfaces. Built from the ground up, the path tracer implements core features such as ray generation, intersection tests, and recursive global illumination, as well as advanced techniques like adaptive sampling, importance sampling, Russian Roulette termination, and BVH acceleration for efficient rendering of complex scenes.
+    This project implements a physically-based path tracer from scratch, capable of rendering photorealistic images by simulating the complex interactions of light with surfaces. The assignment required building a full rendering pipeline, including ray generation, intersection tests, acceleration structures, direct and indirect lighting, and adaptive sampling. I learned how Monte Carlo integration underpins realistic rendering, how acceleration structures like BVH make complex scenes tractable, and how sampling strategies affect both image quality and performance. The most interesting aspect was seeing how small changes in sampling or recursion depth could dramatically change the realism of the output. This project deepened my appreciation for the trade-offs between efficiency and visual fidelity in computer graphics.
   </p>
-  <p>
-    Rays are traced from the camera through each pixel, bouncing through the scene to accumulate both direct and indirect lighting. Adaptive sampling and importance sampling help reduce noise and focus computation where it matters most, while Russian Roulette and BVH structures ensure efficiency. The renderer produces high-quality images that capture effects like soft shadows and color bleeding, and the codebase was developed and documented with the help of AI tools to ensure clarity and robustness.
-  </p>
+
 
   <h2>Part 1</h2>
-  <p>In this section, the key aspects of ray generation and primitive intersection are implemented, as described below:</p>
-
   <h3>Ray Generation and Primitive Intersection</h3>
-  <p>The method <code>Camera::generate_ray</code> takes normalized sensor coordinates (x, y), where it computes <code>halfWidth = tan(radians(hFov) * 0.5)</code> and <code>halfHeight = tan(radians(vFov) * 0.5)</code> to determine the sensor plane's extents. It maps these coordinates to the canonical sensor plane at z = -1 using:</p>
-  <ul>
-    <li><code>px = (2*x - 1) * halfWidth</code></li>
-    <li><code>py = (2*y - 1) * halfHeight</code></li>
-  </ul>
-  <p>This camera-space direction vector is normalized and rotated into world space using the camera-to-world matrix (<code>c2w</code>). A ray is spawned from the camera position and its clipping range is set between <code>nClip</code> and <code>fClip</code>.</p>
-  <p><em>Integration with Primitive Intersection:</em> The ray generation process is tightly integrated with primitive intersection tests. By producing rays with precise clipping ranges, the subsequent intersection tests—such as the Möller–Trumbore algorithm for triangles and the quadratic solution for spheres—can efficiently determine valid intersections. This synergy ensures that only relevant intersections are considered, optimizing the overall rendering process.</p>
-
-  <h3>Ray Tracing</h3>
-  <p>The <code>PathTracer::raytrace_pixel</code> function casts multiple rays per pixel with subpixel jitter for anti-aliasing. It accumulates radiance for each ray and averages the results to compute the final pixel color. This process helps reduce aliasing and noise, resulting in smoother and more accurate renderings.</p>
-
-  <h3>Triangle Intersection</h3>
-  <p>The triangle intersection is performed using the Möller–Trumbore algorithm, which involves:</p>
-  <ul>
-    <li>Computing the edge vectors: <code>e1 = p2 - p1</code> and <code>e2 = p3 - p1</code>.</li>
-    <li>Calculating an auxiliary vector: <code>h = cross(r.d, e2)</code> and the determinant: <code>a = dot(e1, h)</code>. A near-zero <code>a</code> indicates that the ray is parallel to the triangle.</li>
-    <li>If the ray is not parallel, computing barycentric coordinates <code>u</code> and <code>v</code>, and the ray parameter <code>t</code> using <code>f = 1.0 / a</code> and subsequent dot and cross products.</li>
-    <li>Validating the intersection by ensuring that <code>u</code> and <code>v</code> lie within the interval [0, 1], their sum does not exceed 1, and that <code>t</code> is within the clipping range (<code>r.min_t</code> to <code>r.max_t</code>).</li>
-  </ul>
-
+  <p>
+    The rendering pipeline begins with ray generation. For each pixel, <code>Camera::generate_ray</code> computes the direction by mapping normalized sensor coordinates to the camera's sensor plane, then transforms this direction into world space using the camera-to-world matrix. The ray is spawned from the camera position and clipped to the near and far planes. This process is tightly integrated with primitive intersection: rays are tested against all scene primitives, and only those within the valid range are considered.
+  </p>
+  <h3>Triangle Intersection (Möller–Trumbore Algorithm)</h3>
+  <p>
+    For triangles, I implemented the Möller–Trumbore algorithm. This method computes two edge vectors from the triangle's vertices, then uses the cross and dot products to determine if the ray and triangle are parallel. If not, it solves for barycentric coordinates (u, v) and the intersection distance t. The intersection is valid if u, v are in [0,1], their sum is ≤ 1, and t is within the ray's range. This approach is efficient and numerically stable, making it ideal for real-time and offline rendering.
+  </p>
   <h3>Sphere Intersection</h3>
-  <p>The sphere intersection test solves a quadratic equation to determine potential intersection distances (roots). The algorithm selects the closest valid intersection that lies within the ray's clipping range.</p>
+  <p>
+    Sphere intersection is handled by solving the quadratic equation for the intersection of a ray and a sphere. The closest valid root within the ray's range is chosen as the intersection point.
+  </p>
 
-  <!-- Inserted Rendered Images for small .dae files -->
-  <h3>Rendered Images</h3>
-  <p>Below are the rendered images with normal shading for a few small .dae files:</p>
+  <h3>Rendered Images (Normal Shading, Small .dae Files)</h3>
+  <p>Below are the rendered images with normal shading for a few small .dae files, demonstrating correct implementation of ray generation and intersection:</p>
   <div align="center">
     <table style="width:100%">
       <tr align="center">
@@ -155,7 +139,9 @@
   <h2>Part 2</h2>
   <div>
     <h3>BVH Construction Algorithm</h3>
-    <p>Our implementation constructs a BVH recursively. First, we compute the bounding box for all primitives in a given set. When subdividing, we choose the splitting axis as the one along which the centroids have the largest spread. The split point is computed as the midpoint along that axis, which tends to balance the two child nodes. This heuristic effectively reduces the number of ray-primitive intersection tests by organizing the scene from O(n) to O(log(n)) complexity.</p>
+    <p>
+      To accelerate intersection tests, I implemented a Bounding Volume Hierarchy (BVH). The BVH is built recursively: for a set of primitives, I compute their bounding box and choose the splitting axis as the one with the largest spread in centroid positions. The split point is the midpoint along this axis, which helps balance the tree. Each node is then subdivided until a leaf node contains a small number of primitives. This reduces the number of intersection tests from O(n) to O(log n) per ray, making rendering of complex scenes feasible.
+    </p>
 <pre><code>// Example BVH node splitting function
 void buildBVH(Node* node, const std::vector&lt;Primitive&gt; &primitives) {
     // Compute bounding box for primitives
@@ -165,8 +151,8 @@ void buildBVH(Node* node, const std::vector&lt;Primitive&gt; &primitives) {
 }
 </code></pre>
 
-    <h3>Images Rendered with BVH Acceleration</h3>
-    <p>The following images show normal shading for a few large .dae files that can only be rendered efficiently using BVH acceleration. Note the numbers in the filenames indicate the number of primitives present in each scene:</p>
+  <h3>Images Rendered with BVH Acceleration (Large .dae Files)</h3>
+  <p>The following images show normal shading for a few large .dae files that can only be rendered efficiently using BVH acceleration. These scenes would be prohibitively slow to render without BVH:</p>
     <div align="center">
       <table style="width:100%" border="1" cellspacing="0" cellpadding="5">
         <tr align="center">
@@ -192,8 +178,8 @@ void buildBVH(Node* node, const std::vector&lt;Primitive&gt; &primitives) {
       </table>
     </div>
 
-    <h3>Rendering Time Comparison</h3>
-    <p>The table below compares rendering times for scenes with moderately complex geometries, both with and without BVH acceleration. The images on the left display the scene rendered with BVH acceleration, along with the number of thousands of rays drawn and the BVH rendering time extracted from the filename. The right column shows our estimated render times without BVH acceleration.</p>
+  <h3>Rendering Time Comparison and Analysis</h3>
+  <p>The table below compares rendering times for scenes with moderately complex geometries, both with and without BVH acceleration. The images on the left display the scene rendered with BVH acceleration, along with the number of thousands of rays drawn and the BVH rendering time. The right column shows estimated render times without BVH. <b>Analysis:</b> BVH acceleration drastically reduces rendering times, even for scenes that require hundreds of thousands of rays. Without BVH, render times are orders of magnitude higher, making interactive or even offline rendering impractical for complex scenes.</p>
     <div align="center">
       <table style="width:100%" border="1" cellspacing="0" cellpadding="5">
         <tr align="center">
@@ -233,8 +219,10 @@ void buildBVH(Node* node, const std::vector&lt;Primitive&gt; &primitives) {
 
   <h2>Part 3</h2>
   <!-- Begin Direct Lighting Comparison Section -->
-  <h3>Direct Lighting Implementations Comparison</h3>
-  <p>Below are comparisons of images rendered with direct lighting using uniform hemisphere sampling versus importance (lighting) sampling. The following images are provided for the scenes: <strong>hBunny</strong>, <strong>hLucy</strong>, and <strong>hSpheres</strong> (uniform hemisphere sampling) compared with <strong>iBunny</strong>, <strong>iLucy</strong>, and <strong>iSpheres</strong> (importance sampling).</p>
+  <h3>Direct Lighting Implementations: Walkthrough and Comparison</h3>
+  <p>
+    I implemented two approaches for direct lighting: uniform hemisphere sampling and importance (lighting) sampling. In uniform hemisphere sampling, directions are sampled uniformly over the hemisphere at the hit point, and the contribution from each sample is weighted by the BSDF and cosine term. In importance sampling, directions are sampled according to the light source's distribution, focusing computation on directions that contribute most to the final image. This reduces noise and variance, especially for area lights. Below are images rendered with both methods for several scenes.
+  </p>
   <div align="center">
     <table style="width:100%" border="1" cellspacing="0" cellpadding="5">
       <tr align="center">
@@ -260,8 +248,8 @@ void buildBVH(Node* node, const std::vector&lt;Primitive&gt; &primitives) {
     </table>
   </div>
 
-  <h3>Soft Shadows Noise Comparison in the Spheres Scene</h3>
-  <p>The following images show the spheres scene rendered with differing numbers of light rays (-l flag) while using 1 sample per pixel (-s flag). The images illustrate how noise levels in soft shadows improve as more light rays are sampled:</p>
+  <h3>Soft Shadows Noise Comparison (Spheres Scene, Area Light)</h3>
+  <p>The following images show the spheres scene rendered with 1, 4, 16, and 64 light rays (using the -l flag) and 1 sample per pixel (-s flag), using light sampling. As the number of light rays increases, noise in soft shadows is significantly reduced, resulting in smoother and more realistic shading.</p>
   <div align="center">
     <table style="width:100%" border="1" cellspacing="0" cellpadding="5">
       <tr align="center">
@@ -287,12 +275,12 @@ void buildBVH(Node* node, const std::vector&lt;Primitive&gt; &primitives) {
     </table>
   </div>
 
-  <p>The comparisons highlight that while uniform hemisphere sampling provides a baseline estimation of direct lighting, importance sampling significantly reduces noise in soft shadows, resulting in smoother and more accurate renders under identical sampling conditions.</p>
+  <p><b>Analysis:</b> Uniform hemisphere sampling provides a baseline estimation of direct lighting, but importance sampling significantly reduces noise in soft shadows, especially for area lights. This results in smoother and more accurate renders under identical sampling conditions, making importance sampling the preferred method for scenes with complex lighting.</p>
   <!-- End Direct Lighting Comparison Section -->
 
   <!-- Insert walkthrough explanation for direct lighting implementations in Part 3 -->
-  <h3>Walkthrough: Direct Lighting Implementations</h3>
-  <p>In our path tracer, direct lighting is computed using two distinct methods. In the <strong>uniform hemisphere sampling</strong> approach, we form a local coordinate system at the hit point and then sample directions uniformly over the hemisphere. For each sample, a ray is cast and, if it hits a light, the contribution is computed by multiplying the BSDF value, the incoming radiance from the light, and the cosine of the angle between the incoming direction and the surface normal. This contribution is then scaled by the factor <code>2π</code> (the total measure of the hemisphere) to account for the uniform probability density. The Monte Carlo estimator used here is given by:</p>
+  <h3>Direct Lighting: Implementation Details</h3>
+  <p>In the <strong>uniform hemisphere sampling</strong> approach, a local coordinate system is formed at the hit point, and directions are sampled uniformly over the hemisphere. For each sample, a shadow ray is cast; if it hits a light, the contribution is computed by multiplying the BSDF, incoming radiance, and cosine term, then scaled by 2π. The Monte Carlo estimator is:</p>
 
   <blockquote>
     \[
@@ -300,7 +288,7 @@ void buildBVH(Node* node, const std::vector&lt;Primitive&gt; &primitives) {
     \]
   </blockquote>
 
-  <p>In this case, since the sampling is uniform, <code>p(ω)</code> is constant. In contrast, the <strong>importance sampling</strong> method tailors the sampling strategy to the light sources. For each light, especially for area lights, a sample is generated in the direction of the light so that the probability density <code>p(ω)</code> reflects the likelihood of sampling that direction. A shadow ray is then cast to ensure that the light contribution is not blocked. This method effectively reduces noise and variance by focusing samples on more significant lighting contributions, while the basic Monte Carlo estimator remains the same.</p>
+  <p>Since the sampling is uniform, <code>p(ω)</code> is constant. In <strong>importance sampling</strong>, the sampling strategy is tailored to the light sources. For each light, especially area lights, a sample is generated in the direction of the light, and the probability density <code>p(ω)</code> reflects the likelihood of sampling that direction. A shadow ray is cast to ensure the light is not blocked. This method reduces noise and variance by focusing samples on significant lighting contributions.</p>
 
   <!-- Begin Direct Lighting Code Snippets Insertion -->
 // ... cast shadow ray and accumulate light
@@ -323,8 +311,8 @@ return result / numSamples;
 <!-- End Direct Lighting Code Snippets Insertion -->
 
   <!-- Begin Diffuse BSDF Sampling Section -->
-<h3>Diffuse BSDF Sampling</h3>
-<p>In addition to the implementations discussed earlier, we implement <code>DiffuseBSDF::sample_f</code> to handle diffuse materials. This function samples an incoming light direction using a cosine-weighted distribution and returns the Lambertian BSDF value.</p>
+  <h3>Diffuse BSDF Sampling</h3>
+  <p>For diffuse materials, <code>DiffuseBSDF::sample_f</code> samples an incoming light direction using a cosine-weighted distribution and returns the Lambertian BSDF value. This ensures that diffuse materials reflect light equally in all directions, following the Lambertian reflectance model.</p>
 <pre>
   // Diffuse BSDF sampling snippet
   Vector3 sample = sampler.get_sample();
@@ -337,8 +325,10 @@ return result / numSamples;
   <h2>Part 4</h2>
 
   <!-- Begin Global Illumination Renderings Section -->
-<h3>Global Illumination Renderings</h3>
-<p>Global illumination renders using both direct and indirect lighting were computed with 1024 samples per pixel. The following images illustrate the results for different scenes:</p>
+  <h3>Indirect Lighting: Walkthrough and Global Illumination Renderings</h3>
+  <p>
+    Indirect lighting is implemented by recursively spawning new rays at each intersection, simulating multiple bounces of light. The <code>at_least_one_bounce_radiance</code> function accumulates radiance from both direct and indirect paths. Russian Roulette termination is used to probabilistically end low-contribution paths, maintaining unbiased results while improving efficiency. Below are images rendered with both direct and indirect illumination (global illumination) using 1024 samples per pixel.
+  </p>
 <div align="center">
   <table style="width:100%" border="1" cellspacing="0" cellpadding="5">
     <tr align="center">
@@ -363,7 +353,7 @@ return result / numSamples;
 
   <!-- Begin Direct vs Indirect Illumination Comparison Section -->
 <h3>Direct vs Indirect Illumination Comparison for CBspheres_lambertian.dae</h3>
-<p>For the scene rendered from <strong>CBspheres_lambertian.dae</strong> with 1024 samples per pixel, we generated two views: one with only direct illumination and another with only indirect illumination. The image <code>spheresDirect.png</code> captures the direct lighting contribution, while <code>spheresIndirect.png</code> highlights the effect of indirect lighting alone. This comparison illustrates how indirect illumination adds brightness and realism to the scene.</p>
+<p>For the scene rendered from <strong>CBspheres_lambertian.dae</strong> with 1024 samples per pixel, I generated two views: one with only direct illumination and another with only indirect illumination. The direct lighting image captures the contribution from light sources, while the indirect lighting image highlights the effect of light bouncing off surfaces. Indirect illumination adds brightness and realism, filling in shadows and producing subtle color bleeding.</p>
 <div align="center">
   <table style="width:100%" border="1" cellspacing="0" cellpadding="5">
     <tr align="center">
@@ -380,7 +370,7 @@ return result / numSamples;
 
   <!-- Begin CBbunny Bounce Comparison Section -->
 <h3>CBbunny Bounce Comparison</h3>
-<p>For the scene rendered from <strong>CBbunny.dae</strong> using 1024 samples per pixel, we examined the effect of bouncing light by varying the maximum ray depth from 0 to 5, with <code>isAccumBounces</code> set to <code>false</code> (unaccumulated) and <code>true</code> (accumulated). Observations reveal that the second bounce introduces subtle indirect illumination, softening shadows and filling low-light areas, while the third bounce further enhances ambient lighting, contributing significantly to overall realism beyond standard rasterization techniques.</p>
+<p>For <strong>CBbunny.dae</strong> (1024 samples per pixel), I rendered images with max ray depth set to 0, 1, 2, 3, 4, and 5, and both accumulated and unaccumulated bounces. The second bounce introduces subtle indirect illumination, softening shadows and filling low-light areas. The third bounce further enhances ambient lighting, contributing significantly to overall realism compared to rasterization. Accumulated bounces show the combined effect of all bounces up to the current depth, while unaccumulated images isolate the contribution of each bounce.</p>
 <div align="center">
   <table style="width:100%;" border="1" cellspacing="0" cellpadding="5">
     <tr align="center">
@@ -424,7 +414,7 @@ return result / numSamples;
 
   <!-- Begin Russian Roulette Rendering Section for CBbunny.dae -->
 <h3>Russian Roulette Rendering for CBbunny.dae</h3>
-<p>In addition to the previous experiments, we also render CBbunny.dae using Russian Roulette termination to reduce computation while maintaining the same expected value. In Russian Roulette, the estimator <code>X</code> is modified as follows:</p>
+<p>Russian Roulette termination is used to reduce computation while maintaining unbiased results. For <strong>CBbunny.dae</strong>, I rendered images with max ray depth set to 0, 1, 2, 3, 4, and 100, using 1024 samples per pixel. Russian Roulette probabilistically terminates low-contribution paths, and the estimator is:</p>
 <blockquote>
 \[
 X_{rr} = \begin{cases}
@@ -477,7 +467,7 @@ E[X_{rr}] = p_{rr} \; E\left[ \frac{X}{p_{rr}} \right] + (1 - p_{rr}) \; E[0] = 
 
   <!-- Begin Sample-per-Pixel Rate Comparison Section for CBspheres_lambertian.dae -->
 <h3>Sample-per-Pixel Rate Comparison for CBspheres_lambertian.dae</h3>
-<p>In this experiment, we compare rendered views using various sample-per-pixel (SPP) rates: 1, 2, 4, 8, 16, 64, and 1024. We used 4 light rays (l = 4) along with Russian Roulette termination to efficiently handle path termination while maintaining an unbiased estimator. The rendered scene is <strong>CBspheres_lambertian.dae</strong>. The file paths for the images are shown below each sample rate.</p>
+<p>To illustrate the effect of sample-per-pixel (SPP) rates, I rendered <strong>CBspheres_lambertian.dae</strong> with 1, 2, 4, 8, 16, 64, and 1024 SPP, using 4 light rays and Russian Roulette. As SPP increases, noise decreases and the image becomes smoother. The file paths for the images are shown below each sample rate.</p>
 <div align="center">
   <table style="width:100%" border="1" cellspacing="0" cellpadding="5">
     <tr align="center">
@@ -516,31 +506,41 @@ E[X_{rr}] = p_{rr} \; E\left[ \frac{X}{p_{rr}} \right] + (1 - p_{rr}) \; E[0] = 
 </div>
 <!-- End Sample-per-Pixel Rate Comparison Section -->
 
-  <h2>Part 5</h2>
 
-  <!-- Begin Adaptive Sampling Explanation -->
-<h4>Adaptive Sampling Explanation</h4>
-<p>
-In our implementation of adaptive sampling in <code>PathTracer::raytrace_pixel</code>, each pixel is initially sampled with a single ray and then iteratively resampled until convergence is detected. After each new sample, we update the running mean (\(\mu\)) and variance (\(\sigma^2\)) of the pixel’s radiance values. The variance is computed as:
-\[
-\sigma^2 = \frac{1}{n}\sum_{k=1}^{n} x_k^2 - \mu^2
-\]
-and the 95% confidence interval is given by:
-\[
-I = 1.96 \times \frac{\sigma}{\sqrt{n}}
-\]
-Sampling stops when the confidence interval satisfies the condition:
-\[
-I \leq \text{maxTolerance} \times \mu
-\]
-This adaptive technique effectively concentrates computational resources on pixels with higher variance, reducing noise where needed while avoiding unnecessary samples in well-converged regions.
-</p>
-<!-- End Adaptive Sampling Explanation -->
+  <h2>Part 5</h2>
+  <h3>Adaptive Sampling: Explanation and Implementation</h3>
+  <p>
+    Adaptive sampling is used to concentrate computational effort on pixels with high variance, reducing noise where needed and saving samples in well-converged regions. In <code>PathTracer::raytrace_pixel</code>, each pixel is initially sampled with a single ray, and then iteratively resampled until convergence is detected. After each new sample, the running mean (μ) and variance (σ²) of the pixel’s radiance values are updated. The variance is computed as:
+  </p>
+  <blockquote>
+    \[
+    \sigma^2 = \frac{1}{n}\sum_{k=1}^{n} x_k^2 - \mu^2
+    \]
+  </blockquote>
+  <p>
+    The 95% confidence interval is:
+  </p>
+  <blockquote>
+    \[
+    I = 1.96 \times \frac{\sigma}{\sqrt{n}}
+    \]
+  </blockquote>
+  <p>
+    Sampling stops when the confidence interval satisfies:
+  </p>
+  <blockquote>
+    \[
+    I \leq \text{maxTolerance} \times \mu
+    \]
+  </blockquote>
+  <p>
+    This technique ensures that more samples are allocated to noisy regions, resulting in efficient and high-quality renders.
+  </p>
 
   <!-- Begin Adaptive Sampling Renderings Section -->
 <h3>Adaptive Sampling Renderings</h3>
 <p>
-The following images display adaptive sampling renderings for the bunny and sphere scenes from <code>CBbunny.dae</code> using at least 2048 samples per pixel, 1 sample per light, and a max ray depth of 5. For each scene, the sample rate image (indicated by the file with <code>_rate</code>) shows how adaptive sampling varies across different regions, while the other image is the noise-free rendered result.
+  Below are adaptive sampling renderings for the bunny and sphere scenes from <code>CBbunny.dae</code>, using at least 2048 samples per pixel, 1 sample per light, and a max ray depth of 5. For each scene, the sample rate image (with <code>_rate</code> in the filename) shows how adaptive sampling varies across different regions, while the other image is the noise-free rendered result.
 </p>
 <div align="center">
   <table style="width:100%" border="1" cellspacing="0" cellpadding="5">
