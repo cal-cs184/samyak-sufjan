@@ -3,67 +3,133 @@
 <head>
 <!-- Updated CSS styles for a modern, professional look -->
 <style>
-  body {
-    background-color: #f7fafc;
-    padding: 50px;
-    max-width: 1200px;
-    margin: 0 auto;
-    font-family: 'Open Sans', sans-serif;
-    color: #333;
-    line-height: 1.6;
-  }
-  header {
-    background-color: #fff;
-    border-bottom: 2px solid #eaeaea;
-    padding: 20px 0;
-    margin-bottom: 30px;
-    text-align: center;
-  }
-  h1, h2, h3, h4 {
-    color: #222;
-    font-family: 'Source Sans Pro', sans-serif;
-  }
-  a {
-    color: #1a73e8;
-    text-decoration: none;
-  }
-  a:hover {
-    text-decoration: underline;
-  }
-  table {
-    width: 100%;
-    border-collapse: collapse;
-    margin: 20px 0;
-  }
-  table, th, td {
-    border: 1px solid #ddd;
-  }
-  th, td {
-    padding: 10px;
-    text-align: center;
-  }
-  pre {
-    background: #23272e;
-    color: #e3e6eb;
-    border-radius: 6px;
-    padding: 14px 16px;
-    font-size: 1em;
-    overflow-x: auto;
-    margin: 16px 0;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
-  }
-  code {
-    font-family: 'Fira Mono', 'Courier New', Courier, monospace;
-    background: #e8eaed;
-    color: #23272e;
-    border-radius: 3px;
-    padding: 2px 6px;
-    font-size: 0.98em;
-  }
-  /* Additional spacing for sections */
-  section {
-    margin-bottom: 40px;
-  }
+:root {
+  --bg: #eaf2fb;
+  --surface: #ffffff;
+  --text: #1e293b;
+  --muted: #556070;
+  --primary: #1a73e8;
+  --border: #e2e8f0;
+  --shadow: 0 6px 20px rgba(0, 0, 0, 0.07);
+}
+
+* { box-sizing: border-box; }
+
+body {
+  background: var(--bg);
+  padding: 40px 20px;
+  margin: 0;
+  font-family: 'Open Sans', sans-serif;
+  color: var(--text);
+  line-height: 1.7;
+}
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.site-header {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: var(--shadow);
+  padding: 16px 20px;
+  margin-bottom: 24px;
+}
+
+.site-header .brand { text-align: center; }
+
+.topnav {
+  display: flex;
+  justify-content: center;
+  gap: 18px;
+  flex-wrap: wrap;
+  margin-top: 10px;
+}
+
+.topnav a {
+  color: var(--primary);
+  text-decoration: none;
+  font-weight: 600;
+  padding: 8px 10px;
+  border-radius: 8px;
+}
+
+.topnav a:hover {
+  background: #eef3fe;
+  text-decoration: none;
+}
+
+h1, h2, h3, h4 {
+  color: #111827;
+  font-family: 'Source Sans Pro', sans-serif;
+  margin: 0 0 12px;
+}
+
+h1 { text-align: center; margin-bottom: 24px; }
+
+a { color: var(--primary); text-decoration: none; }
+a:hover { text-decoration: underline; }
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  box-shadow: var(--shadow);
+  padding: 24px 28px;
+  margin-bottom: 28px;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 16px 0;
+  background: var(--surface);
+  overflow: hidden;
+  border-radius: 12px;
+}
+
+th, td {
+  padding: 12px;
+  text-align: center;
+  border-bottom: 1px solid var(--border);
+}
+
+th {
+  background: #f6f9ff;
+  color: #0f172a;
+  font-weight: 700;
+}
+
+tr:last-child td { border-bottom: none; }
+
+img {
+  border-radius: 10px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+}
+
+pre {
+  background: #0f172a;
+  color: #e5e7eb;
+  border-radius: 10px;
+  padding: 16px;
+  overflow-x: auto;
+  box-shadow: var(--shadow);
+}
+
+code {
+  font-family: 'Fira Mono', 'Courier New', Courier, monospace;
+  background: #e8edf7;
+  color: #0f172a;
+  border-radius: 6px;
+  padding: 2px 6px;
+}
+
+section { margin-bottom: 0; }
 </style>
 <!-- End Updated CSS Styles -->
 
@@ -86,25 +152,39 @@
 
 
 <body>
-  <div id="header" style="text-align: center; margin-bottom: 20px;">
-    <h2>Samyak Tiwari, Sufjan Fana</h2>
-  <p><a href="https://cal-cs184.github.io/samyak-sufjan/hw3/">https://cal-cs184.github.io/samyak-sufjan/hw3/</a></p>
-  </div>
+<div class="container">
+  <header class="site-header">
+    <div class="brand">
+      <h2>Samyak Tiwari, Sufjan Fana</h2>
+      <p><a href="https://cal-cs184.github.io/samyak-sufjan/hw3/">https://cal-cs184.github.io/samyak-sufjan/hw3/</a></p>
+    </div>
+    <nav class="topnav">
+      <a href="#overview">Overview</a>
+      <a href="#part1">Part 1</a>
+      <a href="#part2">Part 2</a>
+      <a href="#part3">Part 3</a>
+      <a href="#part4">Part 4</a>
+      <a href="#part5">Part 5</a>
+    </nav>
+  </header>
 
-  <h1 align="center">CS 184 Advanced Path Tracer: A Journey in Rendering</h1>
+  <h1>CS 184 Advanced Path Tracer: A Journey in Rendering</h1>
 
 
-  <h2>Overview</h2>
-  <p>
-    This project implements a physically-based path tracer from scratch, capable of rendering photorealistic images by simulating the complex interactions of light with surfaces. The assignment required building a full rendering pipeline, including ray generation, intersection tests, acceleration structures, direct and indirect lighting, and adaptive sampling. I learned how Monte Carlo integration underpins realistic rendering, how acceleration structures like BVH make complex scenes tractable, and how sampling strategies affect both image quality and performance. The most interesting aspect was seeing how small changes in sampling or recursion depth could dramatically change the realism of the output. This project deepened my appreciation for the trade-offs between efficiency and visual fidelity in computer graphics.
-  </p>
+  <section id="overview" class="card">
+    <h2>Overview</h2>
+    <p>
+      This project implements a physically-based path tracer from scratch, capable of rendering photorealistic images by simulating the complex interactions of light with surfaces. The assignment required building a full rendering pipeline, including ray generation, intersection tests, acceleration structures, direct and indirect lighting, and adaptive sampling. I learned how Monte Carlo integration underpins realistic rendering, how acceleration structures like BVH make complex scenes tractable, and how sampling strategies affect both image quality and performance. The most interesting aspect was seeing how small changes in sampling or recursion depth could dramatically change the realism of the output. This project deepened my appreciation for the trade-offs between efficiency and visual fidelity in computer graphics.
+    </p>
+  </section>
 
 
-  <h2>Part 1</h2>
-  <h3>Ray Generation and Primitive Intersection</h3>
-  <p>
-    The rendering pipeline begins with ray generation. For each pixel, <code>Camera::generate_ray</code> computes the direction by mapping normalized sensor coordinates to the camera's sensor plane, then transforms this direction into world space using the camera-to-world matrix. The ray is spawned from the camera position and clipped to the near and far planes. This process is tightly integrated with primitive intersection: rays are tested against all scene primitives, and only those within the valid range are considered.
-  </p>
+  <section id="part1" class="card">
+    <h2>Part 1</h2>
+    <h3>Ray Generation and Primitive Intersection</h3>
+    <p>
+      The rendering pipeline begins with ray generation. For each pixel, <code>Camera::generate_ray</code> computes the direction by mapping normalized sensor coordinates to the camera's sensor plane, then transforms this direction into world space using the camera-to-world matrix. The ray is spawned from the camera position and clipped to the near and far planes. This process is tightly integrated with primitive intersection: rays are tested against all scene primitives, and only those within the valid range are considered.
+    </p>
   <h3>Triangle Intersection (Möller–Trumbore Algorithm)</h3>
   <p>
     For triangles, I implemented the Möller–Trumbore algorithm. This method computes two edge vectors from the triangle's vertices, then uses the cross and dot products to determine if the ray and triangle are parallel. If not, it solves for barycentric coordinates (u, v) and the intersection distance t. The intersection is valid if u, v are in [0,1], their sum is ≤ 1, and t is within the ray's range. This approach is efficient and numerically stable, making it ideal for real-time and offline rendering.
@@ -135,10 +215,12 @@
     </table>
   </div>
   <!-- End of Part 1 section -->
+  </section>
 
-  <h2>Part 2</h2>
-  <div>
-    <h3>BVH Construction Algorithm</h3>
+  <section id="part2" class="card">
+    <h2>Part 2</h2>
+    <div>
+      <h3>BVH Construction Algorithm</h3>
     <p>
       To accelerate intersection tests, I implemented a Bounding Volume Hierarchy (BVH). The BVH is built recursively: for a set of primitives, I compute their bounding box and choose the splitting axis as the one with the largest spread in centroid positions. The split point is the midpoint along this axis, which helps balance the tree. Each node is then subdivided until a leaf node contains a small number of primitives. This reduces the number of intersection tests from O(n) to O(log n) per ray, making rendering of complex scenes feasible.
     </p>
@@ -216,9 +298,11 @@ void buildBVH(Node* node, const std::vector&lt;Primitive&gt; &primitives) {
     <p>This analysis clearly indicates that BVH acceleration drastically reduces rendering times, even for scenes that require drawing hundreds of thousands of rays. Without BVH, the render times are orders of magnitude higher, as illustrated by our estimates.</p>
   </div>
   <!-- End of updated Part 2 section -->
+  </section>
 
-  <h2>Part 3</h2>
-  <!-- Begin Direct Lighting Comparison Section -->
+  <section id="part3" class="card">
+    <h2>Part 3</h2>
+    <!-- Begin Direct Lighting Comparison Section -->
   <h3>Direct Lighting Implementations: Walkthrough and Comparison</h3>
   <p>
     I implemented two approaches for direct lighting: uniform hemisphere sampling and importance (lighting) sampling. In uniform hemisphere sampling, directions are sampled uniformly over the hemisphere at the hit point, and the contribution from each sample is weighted by the BSDF and cosine term. In importance sampling, directions are sampled according to the light source's distribution, focusing computation on directions that contribute most to the final image. This reduces noise and variance, especially for area lights. Below are images rendered with both methods for several scenes.
@@ -274,6 +358,7 @@ void buildBVH(Node* node, const std::vector&lt;Primitive&gt; &primitives) {
       </tr>
     </table>
   </div>
+  <p><em>Parameters:</em> -l in {1, 4, 16, 64}, -s 1, lighting sampling enabled; all other settings identical.</p>
 
   <p><b>Analysis:</b> Uniform hemisphere sampling provides a baseline estimation of direct lighting, but importance sampling significantly reduces noise in soft shadows, especially for area lights. This results in smoother and more accurate renders under identical sampling conditions, making importance sampling the preferred method for scenes with complex lighting.</p>
   <!-- End Direct Lighting Comparison Section -->
@@ -291,24 +376,22 @@ void buildBVH(Node* node, const std::vector&lt;Primitive&gt; &primitives) {
   <p>Since the sampling is uniform, <code>p(ω)</code> is constant. In <strong>importance sampling</strong>, the sampling strategy is tailored to the light sources. For each light, especially area lights, a sample is generated in the direction of the light, and the probability density <code>p(ω)</code> reflects the likelihood of sampling that direction. A shadow ray is cast to ensure the light is not blocked. This method reduces noise and variance by focusing samples on significant lighting contributions.</p>
 
   <!-- Begin Direct Lighting Code Snippets Insertion -->
-// ... cast shadow ray and accumulate light
-<h4>Code Snippet: Uniform Hemisphere Sampling</h4>
-<pre>
-  // Uniform hemisphere sampling snippet
-  Vector3 sampleDir = uniformSampleHemisphere(hit.normal);
-  // ... cast shadow ray and accumulate light
+  <h4>Code Snippet: Uniform Hemisphere Sampling</h4>
+  <pre><code>
+// Uniform hemisphere sampling
+Vector3 sampleDir = uniformSampleHemisphere(hit.normal);
+// cast shadow ray and accumulate if not occluded
 return (2 * M_PI * result) / numSamples;
-</pre>
+  </code></pre>
 
-// ... shadow ray intersection and light accumulation
-<h4>Code Snippet: Importance Sampling</h4>
-<pre>
-  // Importance sampling snippet
-  Vector3 sampleDir = importanceSampleLight(hit.position, &pdf);
-  // ... shadow ray intersection and light accumulation
+  <h4>Code Snippet: Importance Sampling</h4>
+  <pre><code>
+// Importance sampling toward lights
+Vector3 sampleDir = importanceSampleLight(hit.position, &pdf);
+// cast shadow ray and accumulate light contribution / pdf
 return result / numSamples;
-</pre>
-<!-- End Direct Lighting Code Snippets Insertion -->
+  </code></pre>
+  <!-- End Direct Lighting Code Snippets Insertion -->
 
   <!-- Begin Diffuse BSDF Sampling Section -->
   <h3>Diffuse BSDF Sampling</h3>
@@ -320,11 +403,13 @@ return result / numSamples;
   return reflectance / M_PI;
 </pre>
 <p>This implementation follows the Lambertian reflectance model, ensuring that diffuse materials reflect light equally in all directions.</p>
-<!-- End Diffuse BSDF Sampling Section -->
+  <!-- End Diffuse BSDF Sampling Section -->
+  </section>
 
-  <h2>Part 4</h2>
+  <section id="part4" class="card">
+    <h2>Part 4</h2>
 
-  <!-- Begin Global Illumination Renderings Section -->
+    <!-- Begin Global Illumination Renderings Section -->
   <h3>Indirect Lighting: Walkthrough and Global Illumination Renderings</h3>
   <p>
     Indirect lighting is implemented by recursively spawning new rays at each intersection, simulating multiple bounces of light. The <code>at_least_one_bounce_radiance</code> function accumulates radiance from both direct and indirect paths. Russian Roulette termination is used to probabilistically end low-contribution paths, maintaining unbiased results while improving efficiency. Below are images rendered with both direct and indirect illumination (global illumination) using 1024 samples per pixel.
@@ -370,7 +455,7 @@ return result / numSamples;
 
   <!-- Begin CBbunny Bounce Comparison Section -->
 <h3>CBbunny Bounce Comparison</h3>
-<p>For <strong>CBbunny.dae</strong> (1024 samples per pixel), I rendered images with max ray depth set to 0, 1, 2, 3, 4, and 5, and both accumulated and unaccumulated bounces. The second bounce introduces subtle indirect illumination, softening shadows and filling low-light areas. The third bounce further enhances ambient lighting, contributing significantly to overall realism compared to rasterization. Accumulated bounces show the combined effect of all bounces up to the current depth, while unaccumulated images isolate the contribution of each bounce.</p>
+<p>For <strong>CBbunny.dae</strong> (1024 samples per pixel), I rendered images with max ray depth m ∈ {0, 1, 2, 3, 4, 5} for both accumulated and unaccumulated bounces. For the unaccumulated set, I explicitly used <code>isAccumBounces = false</code> to visualize the pure m-th bounce contribution. Observations: the <strong>2nd bounce</strong> adds noticeable fill light and subtle color bleeding onto adjacent surfaces, reducing harsh contrast; the <strong>3rd bounce</strong> strengthens interreflections and further evens illumination. Compared to rasterization (which lacks indirect light), these bounces materially improve realism and soft shading. Accumulated bounces show the combined effect up to depth m, while unaccumulated images isolate each bounce.</p>
 <div align="center">
   <table style="width:100%;" border="1" cellspacing="0" cellpadding="5">
     <tr align="center">
@@ -410,6 +495,7 @@ return result / numSamples;
     </tr>
   </table>
 </div>
+<p><em>Accumulated vs unaccumulated:</em> The accumulated images brighten and denoise progressively with m, while the unaccumulated views reveal diminishing per-bounce energy after the 3rd bounce, explaining why moderate max depths suffice in practice.</p>
 <!-- End CBbunny Bounce Comparison Section -->
 
   <!-- Begin Russian Roulette Rendering Section for CBbunny.dae -->
@@ -504,11 +590,12 @@ E[X_{rr}] = p_{rr} \; E\left[ \frac{X}{p_{rr}} \right] + (1 - p_{rr}) \; E[0] = 
     </tr>
   </table>
 </div>
-<!-- End Sample-per-Pixel Rate Comparison Section -->
+  <!-- End Sample-per-Pixel Rate Comparison Section -->
+  </section>
 
-
-  <h2>Part 5</h2>
-  <h3>Adaptive Sampling: Explanation and Implementation</h3>
+  <section id="part5" class="card">
+    <h2>Part 5</h2>
+    <h3>Adaptive Sampling: Explanation and Implementation</h3>
   <p>
     Adaptive sampling is used to concentrate computational effort on pixels with high variance, reducing noise where needed and saving samples in well-converged regions. In <code>PathTracer::raytrace_pixel</code>, each pixel is initially sampled with a single ray, and then iteratively resampled until convergence is detected. After each new sample, the running mean (μ) and variance (σ²) of the pixel’s radiance values are updated. The variance is computed as:
   </p>
@@ -562,5 +649,7 @@ E[X_{rr}] = p_{rr} \; E\left[ \frac{X}{p_{rr}} \right] + (1 - p_{rr}) \; E[0] = 
   </table>
 </div>
 <!-- End Adaptive Sampling Renderings Section -->
+  </section>
+</div>
 </body>
 </html>
