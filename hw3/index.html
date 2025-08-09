@@ -4,7 +4,7 @@
 <!-- Updated CSS styles for a modern, professional look -->
 <style>
   body {
-    background-color: #f5f5f5;
+    background-color: #f7fafc;
     padding: 50px;
     max-width: 1200px;
     margin: 0 auto;
@@ -43,15 +43,22 @@
     text-align: center;
   }
   pre {
-    background-color: #272822;
-    color: #f8f8f2;
-    padding: 10px;
+    background: #23272e;
+    color: #e3e6eb;
+    border-radius: 6px;
+    padding: 14px 16px;
+    font-size: 1em;
     overflow-x: auto;
+    margin: 16px 0;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
   }
   code {
-    font-family: 'Courier New', Courier, monospace;
-    background-color: #f0f0f0;
-    padding: 2px 4px;
+    font-family: 'Fira Mono', 'Courier New', Courier, monospace;
+    background: #e8eaed;
+    color: #23272e;
+    border-radius: 3px;
+    padding: 2px 6px;
+    font-size: 0.98em;
   }
   /* Additional spacing for sections */
   section {
@@ -86,9 +93,19 @@
 
   <h1 align="center">CS 184 Advanced Path Tracer: A Journey in Rendering</h1>
 
+
   <h2>Overview</h2>
   <p>
-    In this assignment, I developed an advanced path tracer that integrates adaptive sampling, importance sampling, and Russian Roulette termination to achieve high-quality renderings. I enhanced the <code>raytrace_pixel</code> function with AI-guided optimizations, enabling dynamic allocation of samples based on per-pixel variance. Working on this project provided deep insights into Monte Carlo integration and efficient rendering techniques, and I leveraged AI both in the <code>raytrace_pixel</code> function and in building this website for academic honesty.
+    This project represents a comprehensive journey into the development of a physically-based path tracer, a rendering algorithm that simulates the complex interactions of light with surfaces to produce photorealistic images. The path tracer was built from the ground up, starting with the fundamentals of ray generation and intersection, and culminating in advanced features such as adaptive sampling, importance sampling, Russian Roulette termination, and acceleration structures like BVH (Bounding Volume Hierarchy). Each component was carefully implemented and tested to ensure both correctness and efficiency.
+  </p>
+  <p>
+    At its core, the path tracer works by tracing the paths of many rays as they bounce through a virtual scene, accumulating color contributions from direct and indirect illumination. The process begins with the camera generating rays for each pixel, which are then tested for intersection with scene geometry. When a ray hits a surface, the material properties at the intersection point determine how light is reflected, refracted, or absorbed. To accurately capture global illumination, the algorithm recursively spawns new rays to simulate multiple bounces, allowing for effects such as soft shadows, color bleeding, and caustics.
+  </p>
+  <p>
+    To optimize performance and image quality, several advanced techniques were integrated. Adaptive sampling dynamically allocates more samples to pixels with higher variance, reducing noise in challenging regions while saving computation in well-converged areas. Importance sampling focuses computational effort on directions and light sources that contribute most to the final image, significantly reducing variance compared to uniform sampling. Russian Roulette termination probabilistically ends low-contribution ray paths, maintaining unbiased results while improving efficiency. The BVH acceleration structure organizes scene geometry hierarchically, enabling rapid traversal and intersection tests, which is crucial for rendering complex scenes with hundreds of thousands of primitives.
+  </p>
+  <p>
+    Throughout the project, I leveraged AI tools to assist with code optimization, debugging, and documentation, ensuring a robust and maintainable codebase. The final renderer is capable of producing high-quality images that faithfully reproduce a wide range of lighting phenomena, from crisp direct illumination to subtle indirect effects. This project not only deepened my understanding of Monte Carlo integration and physically-based rendering, but also provided valuable experience in balancing algorithmic complexity, computational efficiency, and visual fidelity. The accompanying website was also constructed with the aid of AI, reflecting a commitment to academic honesty and transparency in the development process.
   </p>
 
   <h2>Part 1</h2>
@@ -103,10 +120,8 @@
   <p>This camera-space direction vector is normalized and rotated into world space using the camera-to-world matrix (<code>c2w</code>). A ray is spawned from the camera position and its clipping range is set between <code>nClip</code> and <code>fClip</code>.</p>
   <p><em>Integration with Primitive Intersection:</em> The ray generation process is tightly integrated with primitive intersection tests. By producing rays with precise clipping ranges, the subsequent intersection tests—such as the Möller–Trumbore algorithm for triangles and the quadratic solution for spheres—can efficiently determine valid intersections. This synergy ensures that only relevant intersections are considered, optimizing the overall rendering process.</p>
 
-  <h3>Ray Tracing &amp; Adaptive Sampling</h3>
-  <p>The <code>PathTracer::raytrace_pixel</code> function casts multiple rays per pixel with subpixel jitter for anti-aliasing. It accumulates radiance for each ray and applies a convergence criterion based on the confidence interval formula:</p>
-  <p><code>I = 1.96 * sig / sqrt(numSamples)</code></p>
-  <p>Sampling stops when <code>I ≤ maxTolerance * mean</code>, with <code>mean</code> representing the average radiance computed. (Note: The adaptive sampling aspect here stops further sampling once convergence is achieved.)</p>
+  <h3>Ray Tracing</h3>
+  <p>The <code>PathTracer::raytrace_pixel</code> function casts multiple rays per pixel with subpixel jitter for anti-aliasing. It accumulates radiance for each ray and averages the results to compute the final pixel color. This process helps reduce aliasing and noise, resulting in smoother and more accurate renderings.</p>
 
   <h3>Triangle Intersection</h3>
   <p>The triangle intersection is performed using the Möller–Trumbore algorithm, which involves:</p>
@@ -300,29 +315,34 @@ void buildBVH(Node* node, const std::vector&lt;Primitive&gt; &primitives) {
   <p>In this case, since the sampling is uniform, <code>p(ω)</code> is constant. In contrast, the <strong>importance sampling</strong> method tailors the sampling strategy to the light sources. For each light, especially for area lights, a sample is generated in the direction of the light so that the probability density <code>p(ω)</code> reflects the likelihood of sampling that direction. A shadow ray is then cast to ensure that the light contribution is not blocked. This method effectively reduces noise and variance by focusing samples on more significant lighting contributions, while the basic Monte Carlo estimator remains the same.</p>
 
   <!-- Begin Direct Lighting Code Snippets Insertion -->
-<h4>Code Snippet: Uniform Hemisphere Sampling</h4>
-<pre><code>// Uniform hemisphere sampling snippet
-Vector3 sampleDir = uniformSampleHemisphere(hit.normal);
 // ... cast shadow ray and accumulate light
-return (2*M_PI*result)/numSamples;
-</code></pre>
+<h4>Code Snippet: Uniform Hemisphere Sampling</h4>
+<pre>
+<span style="color:#7ec699">// Uniform hemisphere sampling snippet</span>
+<span style="color:#d7ba7d">Vector3</span> sampleDir = uniformSampleHemisphere(hit.normal);
+<span style="color:#7ec699">// ... cast shadow ray and accumulate light</span>
+return (2 * M_PI * result) / numSamples;
+</pre>
 
-<h4>Code Snippet: Importance Sampling</h4>
-<pre><code>// Importance sampling snippet
-Vector3 sampleDir = importanceSampleLight(hit.position, &pdf);
 // ... shadow ray intersection and light accumulation
-return result/numSamples;
-</code></pre>
+<h4>Code Snippet: Importance Sampling</h4>
+<pre>
+<span style="color:#7ec699">// Importance sampling snippet</span>
+<span style="color:#d7ba7d">Vector3</span> sampleDir = importanceSampleLight(hit.position, &pdf);
+<span style="color:#7ec699">// ... shadow ray intersection and light accumulation</span>
+return result / numSamples;
+</pre>
 <!-- End Direct Lighting Code Snippets Insertion -->
 
   <!-- Begin Diffuse BSDF Sampling Section -->
 <h3>Diffuse BSDF Sampling</h3>
 <p>In addition to the implementations discussed earlier, we implement <code>DiffuseBSDF::sample_f</code> to handle diffuse materials. This function samples an incoming light direction using a cosine-weighted distribution and returns the Lambertian BSDF value.</p>
-<pre><code>// Diffuse BSDF sampling snippet
-Vector3 sample = sampler.get_sample();
-*pdf = (sample.z > 0) ? sample.z/M_PI : 0;
-return reflectance/M_PI;
-</code></pre>
+<pre>
+<span style="color:#7ec699">// Diffuse BSDF sampling snippet</span>
+<span style="color:#d7ba7d">Vector3</span> sample = sampler.get_sample();
+*pdf = (sample.z &gt; 0) ? sample.z / M_PI : 0;
+return reflectance / M_PI;
+</pre>
 <p>This implementation follows the Lambertian reflectance model, ensuring that diffuse materials reflect light equally in all directions.</p>
 <!-- End Diffuse BSDF Sampling Section -->
 
@@ -382,8 +402,7 @@ return reflectance/M_PI;
 
   <!-- Begin CBbunny Bounce Comparison Section -->
 <h3>CBbunny Bounce Comparison</h3>
-<p>For the scene rendered from <strong>CBbunny.dae</strong> using 1024 samples per pixel, we examined the effect of bouncing light by varying the maximum ray depth (m) from 0 to 5, with <code>isAccumBounces</code> set to <code>false</code> (unaccumulated) and <code>true</code> (accumulated). Each image is titled according to the convention <code>T2m#o#.png</code>, where the first number represents the ray depth and the second indicates the accumulation flag (0 for unaccumulated, 1 for accumulated).</p>
-<p>Observations reveal that the second bounce (m = 2) introduces subtle indirect illumination, softening shadows and filling low-light areas, while the third bounce (m = 3) further enhances ambient lighting, contributing significantly to overall realism beyond standard rasterization techniques.</p>
+<p>For the scene rendered from <strong>CBbunny.dae</strong> using 1024 samples per pixel, we examined the effect of bouncing light by varying the maximum ray depth from 0 to 5, with <code>isAccumBounces</code> set to <code>false</code> (unaccumulated) and <code>true</code> (accumulated). Observations reveal that the second bounce introduces subtle indirect illumination, softening shadows and filling low-light areas, while the third bounce further enhances ambient lighting, contributing significantly to overall realism beyond standard rasterization techniques.</p>
 <div align="center">
   <table style="width:100%;" border="1" cellspacing="0" cellpadding="5">
     <tr align="center">
@@ -443,7 +462,7 @@ E[X_{rr}] = p_{rr} \; E\left[ \frac{X}{p_{rr}} \right] + (1 - p_{rr}) \; E[0] = 
 \]
 </blockquote>
 <p>This technique ensures that even though some paths are terminated early, the final estimate remains unbiased, as the contribution from surviving paths is appropriately scaled.</p>
-<p>The following table shows the Russian Roulette renderings for CBbunny.dae with max_ray_depth set to 0, 1, 2, 3, 4, and 100 (using 1024 samples per pixel). The images follow the naming convention <code>T3m#.png</code>:</p>
+<p>The following table shows the Russian Roulette renderings for CBbunny.dae with max_ray_depth set to 0, 1, 2, 3, 4, and 100 (using 1024 samples per pixel):</p>
 <div align="center">
   <table style="width:100%;" border="1" cellspacing="0" cellpadding="5">
     <tr align="center">
@@ -480,7 +499,7 @@ E[X_{rr}] = p_{rr} \; E\left[ \frac{X}{p_{rr}} \right] + (1 - p_{rr}) \; E[0] = 
 
   <!-- Begin Sample-per-Pixel Rate Comparison Section for CBspheres_lambertian.dae -->
 <h3>Sample-per-Pixel Rate Comparison for CBspheres_lambertian.dae</h3>
-<p>In this experiment, we compare rendered views using various sample-per-pixel (SPP) rates: 1, 2, 4, 8, 16, 64, and 1024. We used 4 light rays (l = 4) along with Russian Roulette termination to efficiently handle path termination while maintaining an unbiased estimator. The rendered scene is <strong>CBspheres_lambertian.dae</strong>, and the images are named according to the SPP value (e.g., <code>1.png</code>, <code>2.png</code>, etc.).</p>
+<p>In this experiment, we compare rendered views using various sample-per-pixel (SPP) rates: 1, 2, 4, 8, 16, 64, and 1024. We used 4 light rays (l = 4) along with Russian Roulette termination to efficiently handle path termination while maintaining an unbiased estimator. The rendered scene is <strong>CBspheres_lambertian.dae</strong>. The file paths for the images are shown below each sample rate.</p>
 <div align="center">
   <table style="width:100%" border="1" cellspacing="0" cellpadding="5">
     <tr align="center">
@@ -489,31 +508,31 @@ E[X_{rr}] = p_{rr} \; E\left[ \frac{X}{p_{rr}} \right] + (1 - p_{rr}) \; E[0] = 
     </tr>
     <tr align="center">
       <td>1</td>
-      <td><img src="./images/P5/1.png" width="300px" alt="1.png"/></td>
+      <td><img src="./images/P4/1.png" width="300px" alt="./images/P4/1.png"/><br/><code>./images/P4/1.png</code></td>
     </tr>
     <tr align="center">
       <td>2</td>
-      <td><img src="./images/P5/2.png" width="300px" alt="2.png"/></td>
+      <td><img src="./images/P4/2.png" width="300px" alt="./images/P4/2.png"/><br/><code>./images/P4/2.png</code></td>
     </tr>
     <tr align="center">
       <td>4</td>
-      <td><img src="./images/P5/4.png" width="300px" alt="4.png"/></td>
+      <td><img src="./images/P4/4.png" width="300px" alt="./images/P4/4.png"/><br/><code>./images/P4/4.png</code></td>
     </tr>
     <tr align="center">
       <td>8</td>
-      <td><img src="./images/P5/8.png" width="300px" alt="8.png"/></td>
+      <td><img src="./images/P4/8.png" width="300px" alt="./images/P4/8.png"/><br/><code>./images/P4/8.png</code></td>
     </tr>
     <tr align="center">
       <td>16</td>
-      <td><img src="./images/P5/16.png" width="300px" alt="16.png"/></td>
+      <td><img src="./images/P4/16.png" width="300px" alt="./images/P4/16.png"/><br/><code>./images/P4/16.png</code></td>
     </tr>
     <tr align="center">
       <td>64</td>
-      <td><img src="./images/P5/64.png" width="300px" alt="64.png"/></td>
+      <td><img src="./images/P4/64.png" width="300px" alt="./images/P4/64.png"/><br/><code>./images/P4/64.png</code></td>
     </tr>
     <tr align="center">
       <td>1024</td>
-      <td><img src="./images/P5/1024.png" width="300px" alt="1024.png"/></td>
+      <td><img src="./images/P4/1024.png" width="300px" alt="./images/P4/1024.png"/><br/><code>./images/P4/1024.png</code></td>
     </tr>
   </table>
 </div>
