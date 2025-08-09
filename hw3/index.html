@@ -1,0 +1,569 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+<!-- Updated CSS styles for a modern, professional look -->
+<style>
+  body {
+    background-color: #f5f5f5;
+    padding: 50px;
+    max-width: 1200px;
+    margin: 0 auto;
+    font-family: 'Open Sans', sans-serif;
+    color: #333;
+    line-height: 1.6;
+  }
+  header {
+    background-color: #fff;
+    border-bottom: 2px solid #eaeaea;
+    padding: 20px 0;
+    margin-bottom: 30px;
+    text-align: center;
+  }
+  h1, h2, h3, h4 {
+    color: #222;
+    font-family: 'Source Sans Pro', sans-serif;
+  }
+  a {
+    color: #1a73e8;
+    text-decoration: none;
+  }
+  a:hover {
+    text-decoration: underline;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 20px 0;
+  }
+  table, th, td {
+    border: 1px solid #ddd;
+  }
+  th, td {
+    padding: 10px;
+    text-align: center;
+  }
+  pre {
+    background-color: #272822;
+    color: #f8f8f2;
+    padding: 10px;
+    overflow-x: auto;
+  }
+  code {
+    font-family: 'Courier New', Courier, monospace;
+    background-color: #f0f0f0;
+    padding: 2px 4px;
+  }
+  /* Additional spacing for sections */
+  section {
+    margin-bottom: 40px;
+  }
+</style>
+<!-- End Updated CSS Styles -->
+
+<title>CS 184 Advanced Path Tracer: A Journey in Rendering</title>
+<meta http-equiv="content-type" content="text/html; charset=utf-8" />
+<link href="https://fonts.googleapis.com/css?family=Open+Sans|Source+Sans+Pro" rel="stylesheet">
+
+<script>
+  MathJax = {
+    tex: {
+      inlineMath: [['$', '$'], ['\\(', '\\)']]
+    }
+  };
+</script>
+<script id="MathJax-script" async
+  src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js">
+</script>
+
+</head>
+
+
+<body>
+  <div id="header" style="text-align: center; margin-bottom: 20px;">
+    <h2>Samyak Tiwari, Sufjan Fana</h2>
+  <p><a href="https://cal-cs184.github.io/samyak-sufjan/hw3/">https://cal-cs184.github.io/samyak-sufjan/hw3/</a></p>
+  </div>
+
+  <h1 align="center">CS 184 Advanced Path Tracer: A Journey in Rendering</h1>
+
+  <h2>Overview</h2>
+  <p>
+    In this assignment, I developed an advanced path tracer that integrates adaptive sampling, importance sampling, and Russian Roulette termination to achieve high-quality renderings. I enhanced the <code>raytrace_pixel</code> function with AI-guided optimizations, enabling dynamic allocation of samples based on per-pixel variance. Working on this project provided deep insights into Monte Carlo integration and efficient rendering techniques, and I leveraged AI both in the <code>raytrace_pixel</code> function and in building this website for academic honesty.
+  </p>
+
+  <h2>Part 1</h2>
+  <p>In this section, the key aspects of ray generation and primitive intersection are implemented, as described below:</p>
+
+  <h3>Ray Generation and Primitive Intersection</h3>
+  <p>The method <code>Camera::generate_ray</code> takes normalized sensor coordinates (x, y), where it computes <code>halfWidth = tan(radians(hFov) * 0.5)</code> and <code>halfHeight = tan(radians(vFov) * 0.5)</code> to determine the sensor plane's extents. It maps these coordinates to the canonical sensor plane at z = -1 using:</p>
+  <ul>
+    <li><code>px = (2*x - 1) * halfWidth</code></li>
+    <li><code>py = (2*y - 1) * halfHeight</code></li>
+  </ul>
+  <p>This camera-space direction vector is normalized and rotated into world space using the camera-to-world matrix (<code>c2w</code>). A ray is spawned from the camera position and its clipping range is set between <code>nClip</code> and <code>fClip</code>.</p>
+  <p><em>Integration with Primitive Intersection:</em> The ray generation process is tightly integrated with primitive intersection tests. By producing rays with precise clipping ranges, the subsequent intersection tests—such as the Möller–Trumbore algorithm for triangles and the quadratic solution for spheres—can efficiently determine valid intersections. This synergy ensures that only relevant intersections are considered, optimizing the overall rendering process.</p>
+
+  <h3>Ray Tracing &amp; Adaptive Sampling</h3>
+  <p>The <code>PathTracer::raytrace_pixel</code> function casts multiple rays per pixel with subpixel jitter for anti-aliasing. It accumulates radiance for each ray and applies a convergence criterion based on the confidence interval formula:</p>
+  <p><code>I = 1.96 * sig / sqrt(numSamples)</code></p>
+  <p>Sampling stops when <code>I ≤ maxTolerance * mean</code>, with <code>mean</code> representing the average radiance computed. (Note: The adaptive sampling aspect here stops further sampling once convergence is achieved.)</p>
+
+  <h3>Triangle Intersection</h3>
+  <p>The triangle intersection is performed using the Möller–Trumbore algorithm, which involves:</p>
+  <ul>
+    <li>Computing the edge vectors: <code>e1 = p2 - p1</code> and <code>e2 = p3 - p1</code>.</li>
+    <li>Calculating an auxiliary vector: <code>h = cross(r.d, e2)</code> and the determinant: <code>a = dot(e1, h)</code>. A near-zero <code>a</code> indicates that the ray is parallel to the triangle.</li>
+    <li>If the ray is not parallel, computing barycentric coordinates <code>u</code> and <code>v</code>, and the ray parameter <code>t</code> using <code>f = 1.0 / a</code> and subsequent dot and cross products.</li>
+    <li>Validating the intersection by ensuring that <code>u</code> and <code>v</code> lie within the interval [0, 1], their sum does not exceed 1, and that <code>t</code> is within the clipping range (<code>r.min_t</code> to <code>r.max_t</code>).</li>
+  </ul>
+
+  <h3>Sphere Intersection</h3>
+  <p>The sphere intersection test solves a quadratic equation to determine potential intersection distances (roots). The algorithm selects the closest valid intersection that lies within the ray's clipping range.</p>
+
+  <!-- Inserted Rendered Images for small .dae files -->
+  <h3>Rendered Images</h3>
+  <p>Below are the rendered images with normal shading for a few small .dae files:</p>
+  <div align="center">
+    <table style="width:100%">
+      <tr align="center">
+        <td>
+          <img src="./images/P1/dragon.png" width="300px" alt="dragon.dae"/>
+          <figcaption>dragon.dae</figcaption>
+        </td>
+        <td>
+          <img src="./images/P1/gems.png" width="300px" alt="CBgems.dae"/>
+          <figcaption>CBgems.dae</figcaption>
+        </td>
+        <td>
+          <img src="./images/P1/spheres.png" width="300px" alt="CBspheres.dae"/>
+          <figcaption>CBspheres.dae</figcaption>
+        </td>
+      </tr>
+    </table>
+  </div>
+  <!-- End of Part 1 section -->
+
+  <h2>Part 2</h2>
+  <div>
+    <h3>BVH Construction Algorithm</h3>
+    <p>Our implementation constructs a BVH recursively. First, we compute the bounding box for all primitives in a given set. When subdividing, we choose the splitting axis as the one along which the centroids have the largest spread. The split point is computed as the midpoint along that axis, which tends to balance the two child nodes. This heuristic effectively reduces the number of ray-primitive intersection tests by organizing the scene from O(n) to O(log(n)) complexity.</p>
+<pre><code>// Example BVH node splitting function
+void buildBVH(Node* node, const std::vector&lt;Primitive&gt; &primitives) {
+    // Compute bounding box for primitives
+    // Determine the splitting axis based on centroid spread
+    // Split primitives and recursively build child nodes
+    // ...
+}
+</code></pre>
+
+    <h3>Images Rendered with BVH Acceleration</h3>
+    <p>The following images show normal shading for a few large .dae files that can only be rendered efficiently using BVH acceleration. Note the numbers in the filenames indicate the number of primitives present in each scene:</p>
+    <div align="center">
+      <table style="width:100%" border="1" cellspacing="0" cellpadding="5">
+        <tr align="center">
+          <th>Scene</th>
+          <th>Image</th>
+          <th>Primitives</th>
+        </tr>
+        <tr align="center">
+          <td>Lucy</td>
+          <td><img src="./images/P2/lucy_133796.png" width="200px" alt="lucy_133796.dae"/></td>
+          <td>133,796</td>
+        </tr>
+        <tr align="center">
+          <td>Wall-e</td>
+          <td><img src="./images/P2/wall-e_240326.png" width="200px" alt="wall-e_240326.dae"/></td>
+          <td>240,326</td>
+        </tr>
+        <tr align="center">
+          <td>Dragon</td>
+          <td><img src="./images/P2/dragon_105120.png" width="200px" alt="dragon_105120.dae"/></td>
+          <td>105,120</td>
+        </tr>
+      </table>
+    </div>
+
+    <h3>Rendering Time Comparison</h3>
+    <p>The table below compares rendering times for scenes with moderately complex geometries, both with and without BVH acceleration. The images on the left display the scene rendered with BVH acceleration, along with the number of thousands of rays drawn and the BVH rendering time extracted from the filename. The right column shows our estimated render times without BVH acceleration.</p>
+    <div align="center">
+      <table style="width:100%" border="1" cellspacing="0" cellpadding="5">
+        <tr align="center">
+          <th>Scene</th>
+          <th>Thousands of Rays</th>
+          <th>Render Time with BVH</th>
+          <th>Render Time without BVH</th>
+          <th>Image</th>
+        </tr>
+        <tr align="center">
+          <td>Beetle</td>
+          <td>153</td>
+          <td>0.0266 s</td>
+          <td>32.3 s</td>
+          <td><img src="./images/P2/beetle_153_00266.png" width="200px" alt="beetle_153_00266.png"/></td>
+        </tr>
+        <tr align="center">
+          <td>Cow</td>
+          <td>189</td>
+          <td>0.033 s</td>
+          <td>41.2 s</td>
+          <td><img src="./images/P2/cow_189_0033.png" width="200px" alt="cow_189_0033.png"/></td>
+        </tr>
+        <tr align="center">
+          <td>Teapot</td>
+          <td>226</td>
+          <td>0.1276 s</td>
+          <td>66.7 s</td>
+          <td><img src="./images/P2/teapot_226_01276.png" width="200px" alt="teapot_226_01276.png"/></td>
+        </tr>
+      </table>
+    </div>
+
+    <p>This analysis clearly indicates that BVH acceleration drastically reduces rendering times, even for scenes that require drawing hundreds of thousands of rays. Without BVH, the render times are orders of magnitude higher, as illustrated by our estimates.</p>
+  </div>
+  <!-- End of updated Part 2 section -->
+
+  <h2>Part 3</h2>
+  <ul>
+    <li>Walk through both implementations of the direct lighting function.</li>
+    <li>Show some images rendered with both implementations of the direct lighting function.</li>
+    <li>Focus on one particular scene with at least one area light and compare the noise levels in soft shadows when rendering with 1, 4, 16, and 64 light rays (the -l flag) and with 1 sample per pixel (the -s flag) using light sampling, not uniform hemisphere sampling.</li>
+    <li>Compare the results between uniform hemisphere sampling and lighting sampling in a one-paragraph analysis.</li>
+  </ul>
+  <!-- Begin Direct Lighting Comparison Section -->
+  <h3>Direct Lighting Implementations Comparison</h3>
+  <p>Below are comparisons of images rendered with direct lighting using uniform hemisphere sampling versus importance (lighting) sampling. The following images are provided for the scenes: <strong>hBunny</strong>, <strong>hLucy</strong>, and <strong>hSpheres</strong> (uniform hemisphere sampling) compared with <strong>iBunny</strong>, <strong>iLucy</strong>, and <strong>iSpheres</strong> (importance sampling).</p>
+  <div align="center">
+    <table style="width:100%" border="1" cellspacing="0" cellpadding="5">
+      <tr align="center">
+        <th>Scene</th>
+        <th>Uniform Hemisphere Sampling</th>
+        <th>Importance Lighting Sampling</th>
+      </tr>
+      <tr align="center">
+        <td>Bunny</td>
+        <td><img src="./images/P3/hBunny.png" width="200px" alt="hBunny.png"/></td>
+        <td><img src="./images/P3/iBunny.png" width="200px" alt="iBunny.png"/></td>
+      </tr>
+      <tr align="center">
+        <td>Lucy</td>
+        <td><img src="./images/P3/hLucy.png" width="200px" alt="hLucy.png"/></td>
+        <td><img src="./images/P3/iLucy.png" width="200px" alt="iLucy.png"/></td>
+      </tr>
+      <tr align="center">
+        <td>Spheres</td>
+        <td><img src="./images/P3/hSpheres.png" width="200px" alt="hSpheres.png"/></td>
+        <td><img src="./images/P3/iSpheres.png" width="200px" alt="iSpheres.png"/></td>
+      </tr>
+    </table>
+  </div>
+
+  <h3>Soft Shadows Noise Comparison in the Spheres Scene</h3>
+  <p>The following images show the spheres scene rendered with differing numbers of light rays (-l flag) while using 1 sample per pixel (-s flag). The images illustrate how noise levels in soft shadows improve as more light rays are sampled:</p>
+  <div align="center">
+    <table style="width:100%" border="1" cellspacing="0" cellpadding="5">
+      <tr align="center">
+        <th>Light Rays</th>
+        <th>Image</th>
+      </tr>
+      <tr align="center">
+        <td>1</td>
+        <td><img src="./images/P3/spheres1.png" width="200px" alt="spheres1.png"/></td>
+      </tr>
+      <tr align="center">
+        <td>4</td>
+        <td><img src="./images/P3/spheres4.png" width="200px" alt="spheres4.png"/></td>
+      </tr>
+      <tr align="center">
+        <td>16</td>
+        <td><img src="./images/P3/spheres16.png" width="200px" alt="spheres16.png"/></td>
+      </tr>
+      <tr align="center">
+        <td>64</td>
+        <td><img src="./images/P3/spheres64.png" width="200px" alt="spheres64.png"/></td>
+      </tr>
+    </table>
+  </div>
+
+  <p>The comparisons highlight that while uniform hemisphere sampling provides a baseline estimation of direct lighting, importance sampling significantly reduces noise in soft shadows, resulting in smoother and more accurate renders under identical sampling conditions.</p>
+  <!-- End Direct Lighting Comparison Section -->
+
+  <!-- Insert walkthrough explanation for direct lighting implementations in Part 3 -->
+  <h3>Walkthrough: Direct Lighting Implementations</h3>
+  <p>In our path tracer, direct lighting is computed using two distinct methods. In the <strong>uniform hemisphere sampling</strong> approach, we form a local coordinate system at the hit point and then sample directions uniformly over the hemisphere. For each sample, a ray is cast and, if it hits a light, the contribution is computed by multiplying the BSDF value, the incoming radiance from the light, and the cosine of the angle between the incoming direction and the surface normal. This contribution is then scaled by the factor <code>2π</code> (the total measure of the hemisphere) to account for the uniform probability density. The Monte Carlo estimator used here is given by:</p>
+
+  <blockquote>
+    \[
+    \frac{1}{N} \sum_{j=1}^{N} \frac{ f_r(\mathbf{p}, \omega_j \rightarrow \omega_r)\, L_i(\mathbf{p}, \omega_j)\, \cos\theta_j }{ p(\omega_j) }
+    \]
+  </blockquote>
+
+  <p>In this case, since the sampling is uniform, <code>p(ω)</code> is constant. In contrast, the <strong>importance sampling</strong> method tailors the sampling strategy to the light sources. For each light, especially for area lights, a sample is generated in the direction of the light so that the probability density <code>p(ω)</code> reflects the likelihood of sampling that direction. A shadow ray is then cast to ensure that the light contribution is not blocked. This method effectively reduces noise and variance by focusing samples on more significant lighting contributions, while the basic Monte Carlo estimator remains the same.</p>
+
+  <!-- Begin Direct Lighting Code Snippets Insertion -->
+<h4>Code Snippet: Uniform Hemisphere Sampling</h4>
+<pre><code>// Uniform hemisphere sampling snippet
+Vector3 sampleDir = uniformSampleHemisphere(hit.normal);
+// ... cast shadow ray and accumulate light
+return (2*M_PI*result)/numSamples;
+</code></pre>
+
+<h4>Code Snippet: Importance Sampling</h4>
+<pre><code>// Importance sampling snippet
+Vector3 sampleDir = importanceSampleLight(hit.position, &pdf);
+// ... shadow ray intersection and light accumulation
+return result/numSamples;
+</code></pre>
+<!-- End Direct Lighting Code Snippets Insertion -->
+
+  <!-- Begin Diffuse BSDF Sampling Section -->
+<h3>Diffuse BSDF Sampling</h3>
+<p>In addition to the implementations discussed earlier, we implement <code>DiffuseBSDF::sample_f</code> to handle diffuse materials. This function samples an incoming light direction using a cosine-weighted distribution and returns the Lambertian BSDF value.</p>
+<pre><code>// Diffuse BSDF sampling snippet
+Vector3 sample = sampler.get_sample();
+*pdf = (sample.z > 0) ? sample.z/M_PI : 0;
+return reflectance/M_PI;
+</code></pre>
+<p>This implementation follows the Lambertian reflectance model, ensuring that diffuse materials reflect light equally in all directions.</p>
+<!-- End Diffuse BSDF Sampling Section -->
+
+  <h2>Part 4</h2>
+  <ul>
+    <li>Walk through your implementation of the indirect lighting function.</li>
+    <li>Show some images rendered with global (direct and indirect) illumination. Use 1024 samples per pixel.</li>
+    <li>Pick one scene and compare rendered views first with only direct illumination, then only indirect illumination. Use 1024 samples per pixel.</li>
+    <li>For CBbunny.dae, render the mth bounce of light with max_ray_depth set to 0, 1, 2, 3, 4, and 5 (the -m flag), and isAccumBounces=false. Explain in your write-up what you see for the 2nd and 3rd bounce of light, and how it contributes to the quality of the rendered image compared to rasterization. Use 1024 samples per pixel.</li>
+    <li>Compare rendered views of accumulated and unaccumulated bounces for CBbunny.dae with max_ray_depth set to 0, 1, 2, 3, 4, and 5 (the -m flag). Use 1024 samples per pixel.</li>
+    <li>For CBbunny.dae, output the Russian Roulette rendering with max_ray_depth set to 0, 1, 2, 3, 4, and 100 (the -m flag). Use 1024 samples per pixel.</li>
+    <li>Pick one scene and compare rendered views with various sample-per-pixel rates, including at least 1, 2, 4, 8, 16, 64, and 1024. Use 4 light rays.</li>
+    <li>You will probably want to use the instructional machines for the above renders in order to not burn up your own computer for hours.</li>
+  </ul>
+
+  <!-- Begin Global Illumination Renderings Section -->
+<h3>Global Illumination Renderings</h3>
+<p>Global illumination renders using both direct and indirect lighting were computed with 1024 samples per pixel. The following images illustrate the results for different scenes:</p>
+<div align="center">
+  <table style="width:100%" border="1" cellspacing="0" cellpadding="5">
+    <tr align="center">
+       <th>Scene</th>
+       <th>Image</th>
+    </tr>
+    <tr align="center">
+       <td>Bunny</td>
+       <td><img src="./images/P4/bunnyGlobalM2.png" width="300px" alt="bunnyGlobalM2.png"/></td>
+    </tr>
+    <tr align="center">
+       <td>Coil</td>
+       <td><img src="./images/P4/coilGlobalM2.png" width="300px" alt="coilGlobalM2.png"/></td>
+    </tr>
+    <tr align="center">
+       <td>Spheres</td>
+       <td><img src="./images/P4/spheresGlobalM2.png" width="300px" alt="spheresGlobalM2.png"/></td>
+    </tr>
+  </table>
+</div>
+<!-- End Global Illumination Renderings Section -->
+
+  <!-- Begin Direct vs Indirect Illumination Comparison Section -->
+<h3>Direct vs Indirect Illumination Comparison for CBspheres_lambertian.dae</h3>
+<p>For the scene rendered from <strong>CBspheres_lambertian.dae</strong> with 1024 samples per pixel, we generated two views: one with only direct illumination and another with only indirect illumination. The image <code>spheresDirect.png</code> captures the direct lighting contribution, while <code>spheresIndirect.png</code> highlights the effect of indirect lighting alone. This comparison illustrates how indirect illumination adds brightness and realism to the scene.</p>
+<div align="center">
+  <table style="width:100%" border="1" cellspacing="0" cellpadding="5">
+    <tr align="center">
+      <th>Direct Illumination</th>
+      <th>Indirect Illumination</th>
+    </tr>
+    <tr align="center">
+      <td><img src="./images/spheresDirect.png" width="300px" alt="spheresDirect.png"/></td>
+      <td><img src="./images/spheresIndirect.png" width="300px" alt="spheresIndirect.png"/></td>
+    </tr>
+  </table>
+</div>
+<!-- End Direct vs Indirect Illumination Comparison Section -->
+
+  <!-- Begin CBbunny Bounce Comparison Section -->
+<h3>CBbunny Bounce Comparison</h3>
+<p>For the scene rendered from <strong>CBbunny.dae</strong> using 1024 samples per pixel, we examined the effect of bouncing light by varying the maximum ray depth (m) from 0 to 5, with <code>isAccumBounces</code> set to <code>false</code> (unaccumulated) and <code>true</code> (accumulated). Each image is titled according to the convention <code>T2m#o#.png</code>, where the first number represents the ray depth and the second indicates the accumulation flag (0 for unaccumulated, 1 for accumulated).</p>
+<p>Observations reveal that the second bounce (m = 2) introduces subtle indirect illumination, softening shadows and filling low-light areas, while the third bounce (m = 3) further enhances ambient lighting, contributing significantly to overall realism beyond standard rasterization techniques.</p>
+<div align="center">
+  <table style="width:100%;" border="1" cellspacing="0" cellpadding="5">
+    <tr align="center">
+      <th>Ray Depth (m)</th>
+      <th>Unaccumulated (o0)</th>
+      <th>Accumulated (o1)</th>
+    </tr>
+    <tr align="center">
+      <td>0</td>
+      <td><img src="./images/P4/T2m0o0.png" width="300px" alt="T2m0o0.png"/></td>
+      <td><img src="./images/P4/T2m0o1.png" width="300px" alt="T2m0o1.png"/></td>
+    </tr>
+    <tr align="center">
+      <td>1</td>
+      <td><img src="./images/P4/T2m1o0.png" width="300px" alt="T2m1o0.png"/></td>
+      <td><img src="./images/P4/T2m1o1.png" width="300px" alt="T2m1o1.png"/></td>
+    </tr>
+    <tr align="center">
+      <td>2</td>
+      <td><img src="./images/P4/T2m2o0.png" width="300px" alt="T2m2o0.png"/></td>
+      <td><img src="./images/P4/T2m2o1.png" width="300px" alt="T2m2o1.png"/></td>
+    </tr>
+    <tr align="center">
+      <td>3</td>
+      <td><img src="./images/P4/T2m3o0.png" width="300px" alt="T2m3o0.png"/></td>
+      <td><img src="./images/P4/T2m3o1.png" width="300px" alt="T2m3o1.png"/></td>
+    </tr>
+    <tr align="center">
+      <td>4</td>
+      <td><img src="./images/P4/T2m4o0.png" width="300px" alt="T2m4o0.png"/></td>
+      <td><img src="./images/P4/T2m4o1.png" width="300px" alt="T2m4o1.png"/></td>
+    </tr>
+    <tr align="center">
+      <td>5</td>
+      <td><img src="./images/P4/T2m5o0.png" width="300px" alt="T2m5o0.png"/></td>
+      <td><img src="./images/P4/T2m5o1.png" width="300px" alt="T2m5o1.png"/></td>
+    </tr>
+  </table>
+</div>
+<!-- End CBbunny Bounce Comparison Section -->
+
+  <!-- Begin Russian Roulette Rendering Section for CBbunny.dae -->
+<h3>Russian Roulette Rendering for CBbunny.dae</h3>
+<p>In addition to the previous experiments, we also render CBbunny.dae using Russian Roulette termination to reduce computation while maintaining the same expected value. In Russian Roulette, the estimator <code>X</code> is modified as follows:</p>
+<blockquote>
+\[
+X_{rr} = \begin{cases}
+\dfrac{X}{p_{rr}}, & \text{with probability } p_{rr}, \\
+0, & \text{otherwise}.
+\end{cases}
+\]
+</blockquote>
+<p><strong>Same expected value as original estimator:</strong></p>
+<blockquote>
+\[
+E[X_{rr}] = p_{rr} \; E\left[ \frac{X}{p_{rr}} \right] + (1 - p_{rr}) \; E[0] = E[X]
+\]
+</blockquote>
+<p>This technique ensures that even though some paths are terminated early, the final estimate remains unbiased, as the contribution from surviving paths is appropriately scaled.</p>
+<p>The following table shows the Russian Roulette renderings for CBbunny.dae with max_ray_depth set to 0, 1, 2, 3, 4, and 100 (using 1024 samples per pixel). The images follow the naming convention <code>T3m#.png</code>:</p>
+<div align="center">
+  <table style="width:100%;" border="1" cellspacing="0" cellpadding="5">
+    <tr align="center">
+      <th>Max Ray Depth (m)</th>
+      <th>Image</th>
+    </tr>
+    <tr align="center">
+      <td>0</td>
+      <td><img src="./images/P4/T3m0.png" width="300px" alt="T3m0.png"/></td>
+    </tr>
+    <tr align="center">
+      <td>1</td>
+      <td><img src="./images/P4/T3m1.png" width="300px" alt="T3m1.png"/></td>
+    </tr>
+    <tr align="center">
+      <td>2</td>
+      <td><img src="./images/P4/T3m2.png" width="300px" alt="T3m2.png"/></td>
+    </tr>
+    <tr align="center">
+      <td>3</td>
+      <td><img src="./images/P4/T3m3.png" width="300px" alt="T3m3.png"/></td>
+    </tr>
+    <tr align="center">
+      <td>4</td>
+      <td><img src="./images/P4/T3m4.png" width="300px" alt="T3m4.png"/></td>
+    </tr>
+    <tr align="center">
+      <td>100</td>
+      <td><img src="./images/P4/T3m100.png" width="300px" alt="T3m100.png"/></td>
+    </tr>
+  </table>
+</div>
+<!-- End Russian Roulette Rendering Section -->
+
+  <!-- Begin Sample-per-Pixel Rate Comparison Section for CBspheres_lambertian.dae -->
+<h3>Sample-per-Pixel Rate Comparison for CBspheres_lambertian.dae</h3>
+<p>In this experiment, we compare rendered views using various sample-per-pixel (SPP) rates: 1, 2, 4, 8, 16, 64, and 1024. We used 4 light rays (l = 4) along with Russian Roulette termination to efficiently handle path termination while maintaining an unbiased estimator. The rendered scene is <strong>CBspheres_lambertian.dae</strong>, and the images are named according to the SPP value (e.g., <code>1.png</code>, <code>2.png</code>, etc.).</p>
+<div align="center">
+  <table style="width:100%" border="1" cellspacing="0" cellpadding="5">
+    <tr align="center">
+      <th>Samples per Pixel</th>
+      <th>Image</th>
+    </tr>
+    <tr align="center">
+      <td>1</td>
+      <td><img src="./images/P5/1.png" width="300px" alt="1.png"/></td>
+    </tr>
+    <tr align="center">
+      <td>2</td>
+      <td><img src="./images/P5/2.png" width="300px" alt="2.png"/></td>
+    </tr>
+    <tr align="center">
+      <td>4</td>
+      <td><img src="./images/P5/4.png" width="300px" alt="4.png"/></td>
+    </tr>
+    <tr align="center">
+      <td>8</td>
+      <td><img src="./images/P5/8.png" width="300px" alt="8.png"/></td>
+    </tr>
+    <tr align="center">
+      <td>16</td>
+      <td><img src="./images/P5/16.png" width="300px" alt="16.png"/></td>
+    </tr>
+    <tr align="center">
+      <td>64</td>
+      <td><img src="./images/P5/64.png" width="300px" alt="64.png"/></td>
+    </tr>
+    <tr align="center">
+      <td>1024</td>
+      <td><img src="./images/P5/1024.png" width="300px" alt="1024.png"/></td>
+    </tr>
+  </table>
+</div>
+<!-- End Sample-per-Pixel Rate Comparison Section -->
+
+  <h2>Part 5</h2>
+
+  <!-- Begin Adaptive Sampling Explanation -->
+<h4>Adaptive Sampling Explanation</h4>
+<p>
+In our implementation of adaptive sampling in <code>PathTracer::raytrace_pixel</code>, each pixel is initially sampled with a single ray and then iteratively resampled until convergence is detected. After each new sample, we update the running mean (\(\mu\)) and variance (\(\sigma^2\)) of the pixel’s radiance values. The variance is computed as:
+\[
+\sigma^2 = \frac{1}{n}\sum_{k=1}^{n} x_k^2 - \mu^2
+\]
+and the 95% confidence interval is given by:
+\[
+I = 1.96 \times \frac{\sigma}{\sqrt{n}}
+\]
+Sampling stops when the confidence interval satisfies the condition:
+\[
+I \leq \text{maxTolerance} \times \mu
+\]
+This adaptive technique effectively concentrates computational resources on pixels with higher variance, reducing noise where needed while avoiding unnecessary samples in well-converged regions.
+</p>
+<!-- End Adaptive Sampling Explanation -->
+
+  <!-- Begin Adaptive Sampling Renderings Section -->
+<h3>Adaptive Sampling Renderings</h3>
+<p>
+The following images display adaptive sampling renderings for the bunny and sphere scenes from <code>CBbunny.dae</code> using at least 2048 samples per pixel, 1 sample per light, and a max ray depth of 5. For each scene, the sample rate image (indicated by the file with <code>_rate</code>) shows how adaptive sampling varies across different regions, while the other image is the noise-free rendered result.
+</p>
+<div align="center">
+  <table style="width:100%" border="1" cellspacing="0" cellpadding="5">
+    <tr align="center">
+      <th>Scene</th>
+      <th>Sample Rate Image</th>
+      <th>Noise-Free Rendered Image</th>
+    </tr>
+    <tr align="center">
+      <td>Bunny</td>
+      <td><img src="./images/P5/bunny_rate.png" width="300px" alt="Adaptive Sampling Rate for Bunny"/></td>
+      <td><img src="./images/P5/bunny.png" width="300px" alt="Noise-Free Rendered Bunny"/></td>
+    </tr>
+    <tr align="center">
+      <td>Sphere</td>
+      <td><img src="./images/P5/sphere_rate.png" width="300px" alt="Adaptive Sampling Rate for Sphere"/></td>
+      <td><img src="./images/P5/sphere.png" width="300px" alt="Noise-Free Rendered Sphere"/></td>
+    </tr>
+  </table>
+</div>
+<!-- End Adaptive Sampling Renderings Section -->
+</body>
+</html>
