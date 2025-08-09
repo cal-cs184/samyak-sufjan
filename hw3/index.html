@@ -30,9 +30,6 @@ body {
 }
 
 .site-header {
-  position: sticky;
-  top: 0;
-  z-index: 10;
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 12px;
@@ -549,6 +546,7 @@ E[X_{rr}] = p_{rr} \; E\left[ \frac{X}{p_{rr}} \right] + (1 - p_{rr}) \; E[0] = 
     </tr>
   </table>
 </div>
+<p><b>Observation at m=100:</b> When m = 100, many white pixels appeared scattered throughout the image. This indicated that error was accumulating in <code>L_out</code>. For paths where Russian Roulette did not terminate the light ray after many bounces, their contributions were over-amplified, lighting those pixels too much.</p>
 <!-- End Russian Roulette Rendering Section -->
 
   <!-- Begin Sample-per-Pixel Rate Comparison Section for CBspheres_lambertian.dae -->
