@@ -221,7 +221,8 @@ section { margin-bottom: 0; }
     <p>
       To accelerate intersection tests, I implemented a Bounding Volume Hierarchy (BVH). The BVH is built recursively: for a set of primitives, I compute their bounding box and choose the splitting axis as the one with the largest spread in centroid positions. The split point is the midpoint along this axis, which helps balance the tree. Each node is then subdivided until a leaf node contains a small number of primitives. This reduces the number of intersection tests from O(n) to O(log n) per ray, making rendering of complex scenes feasible.
     </p>
-<pre><code>// Example BVH node splitting function
+<pre><code class="language-cpp">
+// Example BVH node splitting function
 void buildBVH(Node* node, const std::vector&lt;Primitive&gt; &primitives) {
     // Compute bounding box for primitives
     // Determine the splitting axis based on centroid spread
@@ -258,7 +259,7 @@ void buildBVH(Node* node, const std::vector&lt;Primitive&gt; &primitives) {
     </div>
 
   <h3>Rendering Time Comparison and Analysis</h3>
-  <p>The table below compares rendering times for scenes with moderately complex geometries, both with and without BVH acceleration. The images on the left display the scene rendered with BVH acceleration, along with the number of thousands of rays drawn and the BVH rendering time. The right column shows estimated render times without BVH. <b>Analysis:</b> BVH acceleration drastically reduces rendering times, even for scenes that require hundreds of thousands of rays. Without BVH, render times are orders of magnitude higher, making interactive or even offline rendering impractical for complex scenes.</p>
+  <p>The table below compares rendering times for scenes with moderately complex geometries, both with and without BVH acceleration. The images on the left display the scene rendered with BVH acceleration, along with the number of thousands of rays drawn and the BVH rendering time. The right column shows estimated render times without BVH. <b>Analysis:</b> At roughly 150–226k rays, BVH prunes intersection tests to a logarithmic number per ray, yielding speedups of about 500–1200× in our examples (Beetle: ~1215×, Cow: ~1248×, Teapot: ~523×). This turns renders from tens of seconds without BVH (full O(n) primitive sweeps per ray) to tens or hundreds of milliseconds with BVH, enabling interactive iteration. As scene complexity grows, the gap widens because BVH traversal scales with tree depth while brute force grows linearly with primitives; cache-friendlier bounding checks also reduce wasted computation. In short, BVH is essential for practical rendering beyond toy scenes.</p>
     <div align="center">
       <table style="width:100%" border="1" cellspacing="0" cellpadding="5">
         <tr align="center">
@@ -374,33 +375,35 @@ void buildBVH(Node* node, const std::vector&lt;Primitive&gt; &primitives) {
 
   <!-- Begin Direct Lighting Code Snippets Insertion -->
   <h4>Code Snippet: Uniform Hemisphere Sampling</h4>
-  <pre><code>
+  <pre><code class="language-cpp">
 // Uniform hemisphere sampling
 Vector3 sampleDir = uniformSampleHemisphere(hit.normal);
 // cast shadow ray and accumulate if not occluded
 return (2 * M_PI * result) / numSamples;
-  </code></pre>
+</code></pre>
 
   <h4>Code Snippet: Importance Sampling</h4>
-  <pre><code>
+  <pre><code class="language-cpp">
 // Importance sampling toward lights
 Vector3 sampleDir = importanceSampleLight(hit.position, &pdf);
 // cast shadow ray and accumulate light contribution / pdf
 return result / numSamples;
-  </code></pre>
+</code></pre>
   <!-- End Direct Lighting Code Snippets Insertion -->
 
   <!-- Begin Diffuse BSDF Sampling Section -->
   <h3>Diffuse BSDF Sampling</h3>
   <p>For diffuse materials, <code>DiffuseBSDF::sample_f</code> samples an incoming light direction using a cosine-weighted distribution and returns the Lambertian BSDF value. This ensures that diffuse materials reflect light equally in all directions, following the Lambertian reflectance model.</p>
-<pre>
-  // Diffuse BSDF sampling snippet
-  Vector3 sample = sampler.get_sample();
-  *pdf = (sample.z > 0) ? sample.z / M_PI : 0;
-  return reflectance / M_PI;
-</pre>
+<pre><code class="language-cpp">
+// Diffuse BSDF sampling snippet
+Vector3 sample = sampler.get_sample();
+*pdf = (sample.z > 0) ? sample.z / M_PI : 0;
+return reflectance / M_PI;
+</code></pre>
 <p>This implementation follows the Lambertian reflectance model, ensuring that diffuse materials reflect light equally in all directions.</p>
   <!-- End Diffuse BSDF Sampling Section -->
+  <h3>Uniform Hemisphere vs Lighting Sampling: Analysis</h3>
+  <p>Lighting sampling concentrates samples toward actual light directions, drastically lowering variance, especially with area lights and small bright sources. At equal SPP (with the same -l value), it yields smoother soft shadows and cleaner contact regions, whereas uniform hemisphere sampling expends many samples on low-contribution directions and thus converges slowly with visible speckle. Both estimators are unbiased, but lighting sampling achieves much faster convergence per sample. Uniform hemisphere sampling is scene-agnostic and simple to implement, yet requires far higher sample counts to match the quality of lighting sampling. In our spheres scene, lighting sampling delivers the softest, least noisy penumbrae under identical sampling budgets.</p>
   </section>
 
   <section id="part4" class="card">
